@@ -1,1 +1,145 @@
+# for installing the sonarqube need to install the below steps
+Install JDK 17
+
+sudo apt update 
+
+sudo apt install unzip -y
+
+sudo apt install openjdk-17-jdk-y
+
+Install and configure PostgresSQL
+
+sudo apt-cache madison postgresql
+
+sudo apt-get -y install postgresql postgresql-contrib
+
+
+Enable and Start Postgresql command 
+
+
+sudo systemctl enable postgresql
+
+sudo systemctl start postgresql
+
+Command for checking status for postgresql it should be active status
+sudo systemctl status postgresql
+
+Change the password to the postgres
+
+sudo passwd postgres user
+
+New password:postgres
+Retry newpassword: postgres
+
+Switch to postgres user and create a user called sonar 
+
+su -postgres
+createuser sonar
+psql
+
+
+postgres=# ALTER USER sonar WITH ENCRYPTED password 'P@ssword':
+postgres-# CREATE DATABASE sonar OWNER sonar:
+postgres-# \q
+postgres@ip-172-31-34-101:~$ exit
+logout
+
+Install sonarqube 
+wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-<version>.zip
+
+wget https://binaries.sonarsource.com/Distribution/sonarqube/sonarqube-9.8.0.63668.zip
+
+Unzip file using below command 
+unzip sonarqube-9.8.0.63668.zip -d /opt
+
+Renameing the sonar qube directroy
+
+sudo mv /opt/sonarqube-9.8.0.63668/ /opt/sonarqube
+
+
+root@ip-172-31-34-101:/opt# sudo mv /opt/sonarqube-9.8.0.63668/ /opt/sonarqube
+root@ip-172-31-34-101:/opt# ls
+sonarqube
+root@ip-172-31-34-101:/opt# cd
+root@ip-172-31-34-101:~# sudo adduser sonarq
+Adding user `sonarq' ...
+Adding new group `sonarq' (1001) ...
+Adding new user `sonarq' (1001) with group `sonarq' ...
+Creating home directory `/home/sonarq' ...
+Copying files from `/etc/skel' ...
+New password:
+Retype new password:
+passwd: password updated successfully
+Changing the user information for sonarq
+Enter the new value, or press ENTER for the default
+        Full Name []:
+        Room Number []:
+        Work Phone []:
+        Home Phone []:
+        Other []:
+Is the information correct? [Y/n] y
+root@ip-172-31-34-101:~# sudo chown -R sonarq:sonarq /opt/sonarqube/
+root@ip-172-31-34-101:~# ls -lrt
+total 282316
+-rw-r--r-- 1 root root 289080080 Dec 16  2022 sonarqube-9.8.0.63668.zip
+drwx------ 4 root root      4096 Dec 19 16:58 snap
+root@ip-172-31-34-101:~# ls -ld
+drwx------ 4 root root 4096 Dec 19 17:28 .
+root@ip-172-31-34-101:~# ls -ld /opt/sonarqube/
+drwxr-xr-x 11 sonarq sonarq 4096 Dec 16  2022 /opt/sonarqube/
+
+
+
+sudo sysctl -w vm.max_map_count=262144
+
+sudo sysctl -w vm.max_map_count=524288
+
+
+
+sudo vi /opt/sonarqube/conf/sonar.properties
+
+
+sonar.jdbc.username=sonar
+sonar.jdbc.password=P@ssword
+sonar.jdbc.url=jdbc:postgresql://localhost/sonarqube
+sonar.web.javaAdditionalOpts=-server
+
+
+
+sudo vi /etc/systemd/system/sonar.service
+[Unit]
+Description=SonarQube service
+After=syslog.target neteowrk.target
+
+[Service]
+Type=forking
+
+
+ExecStart=/opt/sonarqube/bin/linux-x86-64/sonar.sh start
+ExecStart=/opt/sonarqube/bin/linux-x86-64/sonar.sh stop
+
+User=sonarq
+Group=sonarq
+Restart=always
+
+
+[Install]
+WantedBy-multi-user.target
+
+
+
+sudo systemctl enable sonar
+sudo systemctl start sonar
+
+sudo systemctl status sonar
+
+
+
+
+
+
+
+
+
+
 docker run -d --name sonar -p 9000:9000 sonarqube:lts-community 
