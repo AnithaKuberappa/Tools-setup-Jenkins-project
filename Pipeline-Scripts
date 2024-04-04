@@ -1,0 +1,89 @@
+
+Pipeline scripts  followed the below setps for 
+
+checkout: Checks out the source code from a GitHub repository.
+
+compile: Compiles the Java code using Maven.
+
+test: Runs the tests using Maven.
+
+package: Packages the application using Maven.
+
+Sonarquebe analysis: Analyzes the code using SonarQube scanner.
+
+Quality gate: Waits for the SonarQube quality gate to pass.
+
+Docker build: Builds a Docker image for the application.
+
+Docker publish: Publishes the Docker image to a Docker registry.
+
+pipeline {
+    agent any
+    tools {
+        jdk 'jdk'
+        maven 'maven'
+    }
+    environment {
+        SCANNER_HOME=tool 'sonar'
+    }
+
+    stages {
+        stage('checkout') {
+            steps {
+                git branch: 'main', url: 'https://github.com/AnithaKuberappa/spring-petclinic.git'
+            }
+        }
+        stage('compile') {
+            steps {
+                sh 'mvn compile'
+            }
+        }
+        stage('test') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+        stage('package') {
+            steps {
+                sh 'mvn package'
+            }
+        }
+        stage('Sonarqube analysis') {
+            steps {
+                withSonarQubeEnv('sonar-scanner') {
+                    sh '''$SCANNER_HOME/bin/sonar-scanner -Dsonar.projectName=petclinic \
+                    -Dsonar.java.binaries=. \
+                    -Dsonar.projectKey=petclinic '''
+                }
+            }
+        }
+        stage('Quality gate') {
+            steps {
+                script {
+                    waitForQualityGate abortPipeline: false, credentialsId: 'sonar-token'
+                }
+                    
+            }
+        }
+        stage('Docker build') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        sh "docker build -t image1 ."
+                        sh "docker tag image1 avinashbasoorbs/pet-clinic123:latest"
+                    }
+                }
+            }
+        }
+        
+        stage('Docker publish') {
+            steps {
+                script {
+                    withDockerRegistry(credentialsId: 'docker-cred', toolName: 'docker') {
+                        sh "docker push avinashbasoorbs/pet-clinic123:latest"
+                    }
+                }
+            }
+        }
+    }
+}
